@@ -47,20 +47,13 @@ import org.wso2.carbon.user.api.Tenant;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.tenant.TenantManager;
 import org.wso2.carbon.utils.CarbonUtils;
-import org.wso2.carbon.utils.dbcreator.DatabaseCreator;
 
-import javax.sql.DataSource;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -132,6 +125,16 @@ public class MigrateFrom18to19 implements MigrationClient {
         log.info("DB resource migration done for all the tenants");
     }
 
+    /**
+     * This method is used to remove the FK constraint which is unnamed
+     * This finds the name of the constraint and build the query to delete the constaint and execute it
+     *
+     * @param migrateVersion version to be migrated
+     * @param dbType         database type of the user
+     * @throws SQLException
+     * @throws IOException
+     * @throws APIMigrationException
+     */
     private void dropFKConstraint(String migrateVersion, String dbType) throws SQLException, IOException, APIMigrationException {
         String constraintName = null;
         Connection connection;
@@ -331,7 +334,6 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws MalformedURLException
      */
 
-    //@todo: check swagger v2 spec and add mandatory ones
     private static JSONObject generateSwagger2Document(JSONObject swagger12doc,
                                                        Map<String, JSONArray> apiDefPaths, String swagger12BasePath)
             throws ParseException, MalformedURLException {
@@ -535,7 +537,6 @@ public class MigrateFrom18to19 implements MigrationClient {
      *
      * @throws APIMigrationException
      */
-    //@todo : change the default api.rxt as well
     void rxtMigration() throws APIMigrationException {
         log.info("Rxt migration for API Manager 1.9.0 started.");
         try {
@@ -552,7 +553,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                 for (GenericArtifact artifact : artifacts) {
                     API api = APIUtil.getAPI(artifact, registry);
                     artifact.addAttribute("overview_contextTemplate", api.getContext() + "/{version}");
-                    artifact.addAttribute("overview_environments", "");//@todo : assume published to all environments
+                    artifact.addAttribute("overview_environments", "");
                     artifact.addAttribute("overview_versionType", "");
 
                     artifactManager.updateGenericArtifact(artifact);
@@ -669,7 +670,6 @@ public class MigrateFrom18to19 implements MigrationClient {
      * @throws APIMigrationException
      */
 
-    //@todo : read from fs
     void synapseAPIMigration() throws APIMigrationException {
         String repository = CarbonUtils.getCarbonRepository();
         String tenantRepository = CarbonUtils.getCarbonTenantsDirPath();
@@ -690,7 +690,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                     ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
                 }else{
-                    if (synapseFile.getName().matches("[\\w+][-AT-]"+tenant.getDomain()+"[--][\\w+]")){
+                    if (synapseFile.getName().matches("[\\w+][-AT-]"+tenant.getDomain()+"[--][\\w+][--v]]")){
                         ResourceUtil.updateSynapseAPI(synapseFile,"ENDPOINT");
                     }
                 }
