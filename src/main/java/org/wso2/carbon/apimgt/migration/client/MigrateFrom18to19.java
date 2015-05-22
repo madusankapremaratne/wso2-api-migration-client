@@ -40,6 +40,7 @@ import org.wso2.carbon.governance.api.generic.dataobjects.GenericArtifact;
 import org.wso2.carbon.governance.api.util.GovernanceUtils;
 import org.wso2.carbon.registry.core.ActionConstants;
 import org.wso2.carbon.registry.core.Registry;
+import org.wso2.carbon.registry.core.RegistryConstants;
 import org.wso2.carbon.registry.core.Resource;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.registry.core.session.UserRegistry;
@@ -171,17 +172,64 @@ public class MigrateFrom18to19 implements MigrationClient {
         rxtMigration();
     }
 
+
     /**
-     * This method is used to migrate all the file system components
-     * such as sequences and synapse files
+     * This method is used to migrate rxt
+     * This adds three new attributes to the api rxt
      *
      * @throws APIMigrationException
      */
-    @Override
-    public void fileSystemMigration() throws APIMigrationException {
-        synapseAPIMigration();
-        sequenceMigration();
+    void rxtMigration() throws APIMigrationException {
+        log.info("Rxt migration for API Manager 1.9.0 started.");
+        try {
+            for (Tenant tenant : tenantsArray) {
+
+                PrivilegedCarbonContext.startTenantFlow();
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenant.getDomain());
+                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenant.getId());
+
+                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
+                        .getRealmConfiguration().getAdminUserName();
+                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
+                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant
+                        .getId());
+                GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry, APIConstants.API_KEY);
+                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
+                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
+                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
+                for (GenericArtifact artifact : artifacts) {
+                    API api = APIUtil.getAPI(artifact, registry);
+
+                    APIIdentifier apiIdentifier = api.getId();
+                    String apiVersion = apiIdentifier.getVersion();
+
+                    if(!(api.getContext().endsWith(RegistryConstants.PATH_SEPARATOR + apiVersion))) {
+                        artifact.setAttribute("overview_context", api.getContext() + RegistryConstants.PATH_SEPARATOR + apiVersion);
+                    }
+
+                    artifact.addAttribute("overview_contextTemplate", api.getContext() + RegistryConstants.PATH_SEPARATOR + "{version}");
+                    artifact.addAttribute("overview_environments", "");
+                    artifact.addAttribute("overview_versionType", "");
+
+                    artifactManager.updateGenericArtifact(artifact);
+
+
+                }
+            }
+        } catch (APIManagementException e) {
+            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
+        } catch (RegistryException e) {
+            ResourceUtil.handleException("Error occurred while accessing the registry", e);
+        } catch (UserStoreException e) {
+            ResourceUtil.handleException("Error occurred while reading tenant information", e);
+        } finally {
+            PrivilegedCarbonContext.endTenantFlow();
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("Rxt resource migration done for all the tenants");
+        }
     }
+
 
     /**
      * This method is used to migrate swagger v1.2 resources to swagger v2.0 resource
@@ -531,45 +579,6 @@ public class MigrateFrom18to19 implements MigrationClient {
     }
 
 
-    /**
-     * This method is used to migrate rxt
-     * This adds three new attributes to the api rxt
-     *
-     * @throws APIMigrationException
-     */
-    void rxtMigration() throws APIMigrationException {
-        log.info("Rxt migration for API Manager 1.9.0 started.");
-        try {
-            for (Tenant tenant : tenantsArray) {
-                String adminName = ServiceHolder.getRealmService().getTenantUserRealm(tenant.getId())
-                        .getRealmConfiguration().getAdminUserName();
-                ServiceHolder.getTenantRegLoader().loadTenantRegistry(tenant.getId());
-                Registry registry = ServiceHolder.getRegistryService().getGovernanceUserRegistry(adminName, tenant
-                        .getId());
-                GenericArtifactManager artifactManager = APIUtil.getArtifactManager(registry, APIConstants.API_KEY);
-                GenericArtifactManager manager = new GenericArtifactManager(registry, "api");
-                GovernanceUtils.loadGovernanceArtifacts((UserRegistry) registry);
-                GenericArtifact[] artifacts = manager.getAllGenericArtifacts();
-                for (GenericArtifact artifact : artifacts) {
-                    API api = APIUtil.getAPI(artifact, registry);
-                    artifact.addAttribute("overview_contextTemplate", api.getContext() + "/{version}");
-                    artifact.addAttribute("overview_environments", "");
-                    artifact.addAttribute("overview_versionType", "");
-
-                    artifactManager.updateGenericArtifact(artifact);
-                }
-            }
-        } catch (APIManagementException e) {
-            ResourceUtil.handleException("Error occurred while reading API from the artifact ", e);
-        } catch (RegistryException e) {
-            ResourceUtil.handleException("Error occurred while accessing the registry", e);
-        } catch (UserStoreException e) {
-            ResourceUtil.handleException("Error occurred while reading tenant information", e);
-        }
-        if (log.isDebugEnabled()) {
-            log.debug("Rxt resource migration done for all the tenants");
-        }
-    }
 
 
 
@@ -629,6 +638,18 @@ public class MigrateFrom18to19 implements MigrationClient {
         if (log.isDebugEnabled()) {
             log.debug("old resources cleaned up.");
         }
+    }
+
+    /**
+     * This method is used to migrate all the file system components
+     * such as sequences and synapse files
+     *
+     * @throws APIMigrationException
+     */
+    @Override
+    public void fileSystemMigration() throws APIMigrationException {
+        synapseAPIMigration();
+        sequenceMigration();
     }
 
     /**

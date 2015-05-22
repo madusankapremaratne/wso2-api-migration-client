@@ -48,6 +48,8 @@ import java.util.Map;
  * policy="dynamic" bind="setRegistryService" unbind="unsetRegistryService"
  * @scr.reference name="tenant.registryloader" interface="org.wso2.carbon.registry.core.service.TenantRegistryLoader" cardinality="1..1"
  * policy="dynamic" bind="setTenantRegistryLoader" unbind="unsetTenantRegistryLoader"
+ * @scr.reference name="apim.configuration" interface="org.wso2.carbon.apimgt.impl.APIManagerConfigurationService" cardinality="1..1"
+ * policy="dynamic" bind="setApiManagerConfig" unbind="unsetApiManagerConfig"
  */
 
 @SuppressWarnings("unused")
@@ -101,6 +103,7 @@ public class APIMMigrationServiceComponent {
             if (migrateVersion != null) {
                 if (Constants.VERSION_1_9.equalsIgnoreCase(migrateVersion)) {
                     log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
+
                     // Create a thread and wait till the APIManager DBUtils is initialized
 
                     MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
@@ -110,7 +113,7 @@ public class APIMMigrationServiceComponent {
                         log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
                         migrateFrom18to19.databaseMigration(migrateVersion);
                         migrateFrom18to19.registryResourceMigration();
-                        //migrateFrom18to19.fileSystemMigration();
+                        migrateFrom18to19.fileSystemMigration();
                     } else {
                         //Only performs database migration
                         if (isDBMigrationNeeded) {
@@ -147,6 +150,8 @@ public class APIMMigrationServiceComponent {
             log.error("User store  exception occurred while migrating " + e.getMessage());
         } catch (SQLException e) {
             log.error("SQL exception occurred while migrating " + e.getMessage());
+        } catch (Exception e) {
+            log.error("Error occurred while initializing data source.  " + e.getMessage());
         }
         log.info("WSO2 API Manager migration component successfully activated.");
     }
@@ -224,6 +229,24 @@ public class APIMMigrationServiceComponent {
     protected void unsetTenantRegistryLoader(TenantRegistryLoader tenantRegLoader) {
         log.debug("Unset Tenant Registry Loader");
         ServiceHolder.setTenantRegLoader(null);
+    }
+
+    /**
+     * Method to set API Manager configuration
+     *
+     * @param apiManagerConfig api manager configuration
+     */
+    protected void setApiManagerConfig(APIManagerConfigurationService apiManagerConfig) {
+        log.info("Setting APIManager configuration");
+    }
+
+    /**
+     * Method to unset API manager configuration
+     *
+     * @param apiManagerConfig api manager configuration
+     */
+    protected void unsetApiManagerConfig(APIManagerConfigurationService apiManagerConfig) {
+        log.info("Un-setting APIManager configuration");
     }
 
 }

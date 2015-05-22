@@ -75,6 +75,21 @@ public class ResourceUtil {
                 + RegistryConstants.PATH_SEPARATOR + "swagger.json";
     }
 
+    /**
+     * location for the rxt of the api
+     *
+     * @param apiName     name of the API
+     * @param apiVersion  version of the API
+     * @param apiProvider provider name of the API
+     * @return rxt location for the api as a string
+     */
+    public static String getRxtResourceLocation(String apiName, String apiVersion, String apiProvider) {
+        return APIConstants.API_ROOT_LOCATION + RegistryConstants.PATH_SEPARATOR + apiProvider
+                + RegistryConstants.PATH_SEPARATOR + apiName + RegistryConstants.PATH_SEPARATOR + apiVersion
+                + RegistryConstants.PATH_SEPARATOR + "api";
+    }
+
+
 
     /**
      * This method is used to get the database driver name
