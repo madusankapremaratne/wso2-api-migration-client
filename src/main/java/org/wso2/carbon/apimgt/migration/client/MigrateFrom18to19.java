@@ -675,7 +675,10 @@ public class MigrateFrom18to19 implements MigrationClient {
                         new File(SequenceFilePath + "_cors_request_handler.xml"));
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_auth_failure_handler_");
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_throttle_out_handler_");
-                ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
+                if (tenant.getId() == MultitenantConstants.SUPER_TENANT_ID) {
+                    ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "_token_fault_");
+
+                }
                 ResourceUtil.copyNewSequenceToExistingSequences(SequenceFilePath, "fault");
             } catch (IOException e) {
                 ResourceUtil.handleException("Error occurred while reading file to copy.", e);
