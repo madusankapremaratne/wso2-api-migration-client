@@ -105,85 +105,46 @@ public class MigrateFrom18to19 implements MigrationClient {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
-            /*String queryToExecute = ResourceUtil.pickQueryFromResources(migrateVersion, Constants.ALTER).trim();
             connection = APIMgtDBUtil.getConnection();
+            String dbType = MigrationDBCreator.getDatabaseType(connection);
+            String dbScript = ResourceUtil.pickQueryFromResources(migrateVersion, dbType);
+            BufferedReader bufferedReader;
 
-            String queryArray[] = queryToExecute.split(Constants.LINE_BREAK);
-
-            connection.setAutoCommit(false);
-
-            for (String query : queryArray) {
-                preparedStatement = connection.prepareStatement(query.trim());
-                preparedStatement.execute();
-                connection.commit();
-                preparedStatement.close();
-            }*/
-
-
-
-
-                connection = APIMgtDBUtil.getConnection();
-                String dbType = MigrationDBCreator.getDatabaseType(connection);
-                String dbScript = ResourceUtil.pickQueryFromResources(migrateVersion, dbType);
-                BufferedReader bufferedReader;
-
-                InputStream is = new FileInputStream(dbScript);
-                bufferedReader = new BufferedReader(new InputStreamReader(is));
-                String sqlQuery;
-                while ((sqlQuery = bufferedReader.readLine()) != null) {
-                    if("oracle".equals(dbType)){
-                        sqlQuery = sqlQuery.replace(";","");
-                    }
-                    sqlQuery = sqlQuery.trim();
-                    if (sqlQuery.startsWith("//") || sqlQuery.startsWith("--")) {
+            InputStream is = new FileInputStream(dbScript);
+            bufferedReader = new BufferedReader(new InputStreamReader(is));
+            String sqlQuery;
+            while ((sqlQuery = bufferedReader.readLine()) != null) {
+                if ("oracle".equals(dbType)) {
+                    sqlQuery = sqlQuery.replace(";", "");
+                }
+                sqlQuery = sqlQuery.trim();
+                if (sqlQuery.startsWith("//") || sqlQuery.startsWith("--")) {
+                    continue;
+                }
+                StringTokenizer stringTokenizer = new StringTokenizer(sqlQuery);
+                if (stringTokenizer.hasMoreTokens()) {
+                    String token = stringTokenizer.nextToken();
+                    if ("REM".equalsIgnoreCase(token)) {
                         continue;
                     }
-                    StringTokenizer stringTokenizer = new StringTokenizer(sqlQuery);
-                    if (stringTokenizer.hasMoreTokens()) {
-                        String token = stringTokenizer.nextToken();
-                        if ("REM".equalsIgnoreCase(token)) {
-                            continue;
-                        }
-                    }
-
-                    if (sqlQuery.contains("\\n")) {
-                        sqlQuery = sqlQuery.replace("\\n", "");
-                    }
-
-                    if(sqlQuery.length()>0) {
-                        preparedStatement = connection.prepareStatement(sqlQuery.trim());
-                        preparedStatement.execute();
-                        connection.commit();
-                        preparedStatement.close();
-                    }
                 }
 
+                if (sqlQuery.contains("\\n")) {
+                    sqlQuery = sqlQuery.replace("\\n", "");
+                }
 
-            /*APIManagerConfiguration config = ServiceReferenceHolder.getInstance().
-                    getAPIManagerConfigurationService().getAPIManagerConfiguration();
-            String dataSourceName = config.getFirstProperty(Constants.DATA_SOURCE_NAME);
-
-            if (dataSourceName != null) {
-                try {
-                    Context ctx = new InitialContext();
-                    dataSource = (DataSource) ctx.lookup(dataSourceName);
-                } catch (NamingException e) {
-                    throw new APIManagementException("Error while looking up the data " +
-                            "source: " + dataSourceName);
+                if (sqlQuery.length() > 0) {
+                    preparedStatement = connection.prepareStatement(sqlQuery.trim());
+                    preparedStatement.execute();
+                    connection.commit();
+                    preparedStatement.close();
                 }
             }
-            MigrationDBCreator migrationDBCreator = new MigrationDBCreator(dataSource);
-            migrationDBCreator.createRegistryDatabase();*/
-                //dropFKConstraint(migrateVersion, dbType);
-
-    /*        if (log.isDebugEnabled()) {
-                log.debug("Query " + queryToExecute + " executed ");
-            }*/
 
             //To drop the foreign key
             dropFKConstraint(migrateVersion, dbType);
 
-            } catch (IOException e) {
+        } catch (IOException e) {
             //ResourceUtil.handleException("Error occurred while finding the query. Please check the file path.", e);
             log.error("Error occurred while migrating databases", e);
         } catch (Exception e) {
@@ -216,7 +177,7 @@ public class MigrateFrom18to19 implements MigrationClient {
         connection = APIMgtDBUtil.getConnection();
         connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
-        if("oracle".equals(dbType)){
+        if ("oracle".equals(dbType)) {
             queryArray[0] = queryArray[0].replace(Constants.DELIMITER, "");
         }
         ResultSet resultSet = statement.executeQuery(queryArray[0]);
@@ -226,7 +187,7 @@ public class MigrateFrom18to19 implements MigrationClient {
 
         if (constraintName != null) {
             queryToExecute = queryArray[1].replace("<temp_key_name>", constraintName);
-            if("oracle".equals(dbType)){
+            if ("oracle".equals(dbType)) {
                 queryToExecute = queryToExecute.replace(Constants.DELIMITER, "");
             }
 
@@ -702,7 +663,7 @@ public class MigrateFrom18to19 implements MigrationClient {
                     } else {
                         paramObj.put("description", "");
                     }
-                    //Skip GET and DELETE methods
+                    //Skip body parameter of GET and DELETE methods
                     /*if (!("GET".equals(method)) && !("DELETE".equals(method))) {
                         newParameters.add(paramObj);
                     } else {
