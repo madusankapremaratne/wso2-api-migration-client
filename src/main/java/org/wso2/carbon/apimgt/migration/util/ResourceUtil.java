@@ -136,19 +136,13 @@ public class ResourceUtil {
 
             if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_9)) {
                 //pick from 18to19Migration/sql-scripts
-                resourcePath = CarbonUtils.getCarbonHome() + "/dbscripts/migration-1.8.0_to_1.9.0/";
-            } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_8)) {
-                //pick from 17to18Migration/sql-scripts
-                resourcePath = CarbonUtils.getCarbonHome() + "/dbscripts/migration-1.7.0_to_1.8.0/";
-            } else if (migrateVersion.equalsIgnoreCase(Constants.VERSION_1_7)) {
-                //pick from 16to17Migration/sql-scripts
-                resourcePath = CarbonUtils.getCarbonHome() + "/dbscripts/migration-1.6.0_to_1.7.0/";
+                resourcePath = CarbonUtils.getCarbonHome() + "../migration_scripts/1.8.0_to_1.9.0/";
             } else {
                 throw new APIMigrationException("No query picked up for the given migrate version. Please check the migrate version.");
             }
 
             if (Constants.CONSTRAINT.equals(queryType)) {
-                resourcePath = CarbonUtils.getCarbonHome() + "/dbscripts/migration-1.8.0_to_1.9.0/";
+                resourcePath = CarbonUtils.getCarbonHome() + "../migration_scripts/1.8.0_to_1.9.0/";
                 //queryTobeExecuted = resourcePath + "drop-fk.sql";
                 queryTobeExecuted = IOUtils.toString(new FileInputStream(new File(resourcePath + "drop-fk.sql")), "UTF-8");
             } else {
@@ -157,9 +151,9 @@ public class ResourceUtil {
             }
 
         } catch (IOException e) {
-            throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
+            throw new APIMigrationException("Make sure you have migration_scripts directory in the same level with the wso2am-<version> " + e);
         } catch (Exception e) {
-            throw new APIMigrationException("Error occurred while accessing the sql from resources. " + e);
+            throw new APIMigrationException("Error occurred while accessing the sql from the directory. " + e);
         }
 
         return queryTobeExecuted;
