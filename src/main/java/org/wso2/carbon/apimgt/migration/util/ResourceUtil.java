@@ -188,12 +188,12 @@ public class ResourceUtil {
             Document doc = docBuilder.parse(filePath);
             Node sequence = doc.getElementsByTagName("sequence").item(0);
             Element corsSequence = doc.createElementNS(namespace, "sequence");
-            corsSequence.setAttribute("key", "_cors_request_handler");
+            corsSequence.setAttribute("key", "_cors_request_handler_");
             boolean available = false;
             for (int i = 0; i < sequence.getChildNodes().getLength(); i++) {
                 Node tempNode = sequence.getChildNodes().item(i);
                 if (tempNode.getNodeType() == Node.ELEMENT_NODE &&"sequence".equals(tempNode.getLocalName()) &&
-                    "_cors_request_handler".equals(tempNode.getAttributes().getNamedItem("key").getTextContent())) {
+                    "_cors_request_handler_".equals(tempNode.getAttributes().getNamedItem("key").getTextContent())) {
                     available = true;
                     break;
                 }

@@ -211,8 +211,8 @@ public class MigrateFrom18to19 implements MigrationClient {
     @Override
     public void registryResourceMigration() throws APIMigrationException {
         //copyNewRxtFileToRegistry();
-        swaggerResourceMigration();
         rxtMigration();
+        swaggerResourceMigration();
     }
 
 
@@ -277,11 +277,6 @@ public class MigrateFrom18to19 implements MigrationClient {
             ResourceUtil.handleException("Error occurred while accessing the registry", e);
         } catch (UserStoreException e) {
             ResourceUtil.handleException("Error occurred while reading tenant information", e);
-        }
-        finally {
-            if(isTenantFlowStarted){
-                PrivilegedCarbonContext.endTenantFlow();
-            }
         }
         if (log.isDebugEnabled()) {
             log.debug("Rxt resource migration done for all the tenants");
@@ -433,9 +428,6 @@ public class MigrateFrom18to19 implements MigrationClient {
             ResourceUtil.handleException("Error occurred while getting swagger v2.0 document", e);
         } catch (UserStoreException e) {
             ResourceUtil.handleException("Error occurred while reading tenant information", e);
-        }
-        if(isTenantFlowStarted){
-            PrivilegedCarbonContext.endTenantFlow();
         }
 
         if (log.isDebugEnabled()) {

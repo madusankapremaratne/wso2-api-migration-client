@@ -63,11 +63,14 @@ public class APIMMigrationServiceComponent {
      * @param context OSGi component context.
      */
     protected void activate(ComponentContext context) {
-        String migrateVersion = null;
+        String migrateVersion;
+        String fileMigrateVersion;
+        String registryMigrateVersion;
+        String dbMigrateVersion;
         boolean cleanupNeeded = false;
-        boolean isDBMigrationNeeded = false;
+        /*boolean isDBMigrationNeeded = false;
         boolean isRegistryMigrationNeeded = false;
-        boolean isFileSystemMigrationNeeded = false;
+        boolean isFileSystemMigrationNeeded = false;*/
 
         try {
             APIMgtDBUtil.initialize();
@@ -75,7 +78,7 @@ public class APIMMigrationServiceComponent {
             log.error("Error occurred while initializing DB Util " + e.getMessage());
         }
 
-        Map<String, String> argsMap = new HashMap<String, String>();
+        /*Map<String, String> argsMap = new HashMap<String, String>();
         argsMap.put("migrateVersion", System.getProperty("migrate"));
         argsMap.put("isCleanUpNeeded", System.getProperty("cleanup"));
         argsMap.put("isDBMigrationNeeded", System.getProperty("migrateDB"));
@@ -97,45 +100,23 @@ public class APIMMigrationServiceComponent {
             if (argsMap.get("isFileSysMigrationNeeded") != null) {
                 isFileSystemMigrationNeeded = Boolean.parseBoolean(argsMap.get("isFileSysMigrationNeeded"));
             }
-        }
+        }*/
 
         try {
+            migrateVersion = System.getProperty("migrate");
+            if (System.getProperty("cleanup") != null) {
+                cleanupNeeded = Boolean.parseBoolean(System.getProperty("cleanup"));
+            }
+            // Create a thread and wait till the APIManager DBUtils is initialized
+            MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
+
             if (migrateVersion != null) {
                 if (Constants.VERSION_1_9.equalsIgnoreCase(migrateVersion)) {
+
                     log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
-
-                    // Create a thread and wait till the APIManager DBUtils is initialized
-
-                    MigrationClient migrateFrom18to19 = new MigrateFrom18to19();
-
-                    //Default operation will migrate all three types of resources
-                    if (argsMap.get("isDBMigrationNeeded") == null && argsMap.get("isRegMigrationNeeded") == null && argsMap.get("isFileSysMigrationNeeded") == null) {
-                        log.info("Migrating WSO2 API Manager 1.8.0 resources to WSO2 API Manager 1.9.0");
-                        migrateFrom18to19.databaseMigration(migrateVersion);
-                        migrateFrom18to19.registryResourceMigration();
-                        migrateFrom18to19.fileSystemMigration();
-                    } else {
-                        //Only performs database migration
-                        if (isDBMigrationNeeded) {
-                            log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
-                            migrateFrom18to19.databaseMigration(migrateVersion);
-                        }
-                        //Only performs registry migration
-                        if (isRegistryMigrationNeeded) {
-                            log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
-                            migrateFrom18to19.registryResourceMigration();
-                        }
-                        //Only performs file system migration
-                        if (isFileSystemMigrationNeeded) {
-                            log.info("Migrating WSO2 API Manager 1.8.0 file system resources to WSO2 API Manager 1.9.0");
-                            migrateFrom18to19.fileSystemMigration();
-                        }
-                    }
-                    //Old resource cleanup
-                    if (cleanupNeeded) {
-                        migrateFrom18to19.cleanOldResources();
-                        log.info("Old resources cleaned up.");
-                    }
+                    migrateFrom18to19.databaseMigration(migrateVersion);
+                    migrateFrom18to19.registryResourceMigration();
+                    migrateFrom18to19.fileSystemMigration();
 
                     if (log.isDebugEnabled()) {
                         log.debug("API Manager 1.8.0 to 1.9.0 migration successfully completed");
@@ -143,7 +124,37 @@ public class APIMMigrationServiceComponent {
                 } else {
                     log.error("The given migrate version " + migrateVersion + " is not supported. Please check the version and try again.");
                 }
+            } else {
+                fileMigrateVersion = System.getProperty("migrateFS");
+                registryMigrateVersion = System.getProperty("migrateReg");
+                dbMigrateVersion = System.getProperty("migrateDB");
+
+                //Only performs file system migration
+                if (fileMigrateVersion != null && Constants.VERSION_1_9.equalsIgnoreCase(fileMigrateVersion)) {
+                    log.info("Migrating WSO2 API Manager 1.8.0 file system resources to WSO2 API Manager 1.9.0");
+                    migrateFrom18to19.fileSystemMigration();
+                }
+
+                //Only performs registry migration
+                if (registryMigrateVersion != null && Constants.VERSION_1_9.equalsIgnoreCase(registryMigrateVersion)) {
+                    log.info("Migrating WSO2 API Manager 1.8.0 registry resources to WSO2 API Manager 1.9.0");
+                    migrateFrom18to19.registryResourceMigration();
+                }
+
+                //Only performs database migration
+                if (dbMigrateVersion != null && Constants.VERSION_1_9.equalsIgnoreCase(dbMigrateVersion)) {
+                    log.info("Migrating WSO2 API Manager 1.8.0 databases to WSO2 API Manager 1.9.0");
+                    migrateFrom18to19.databaseMigration(dbMigrateVersion);
+                }
+
             }
+
+            //Old resource cleanup
+            if (cleanupNeeded) {
+                migrateFrom18to19.cleanOldResources();
+                log.info("Old resources cleaned up.");
+            }
+
         } catch (APIMigrationException e) {
             log.error("API Management  exception occurred while migrating " + e.getMessage());
         } catch (UserStoreException e) {
